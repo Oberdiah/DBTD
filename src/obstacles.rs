@@ -63,7 +63,7 @@ impl Obstacle for SpinnyCircle {
 
 			crate::draw_rect_raw(
 				ctx,
-				Color::YELLOW,
+				Color::MAGENTA,
 				child_position,
 				Point2::new(self.child_radius, self.child_radius),
 			)

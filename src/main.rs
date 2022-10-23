@@ -84,9 +84,6 @@ pub struct LoadedMap {
 	pub game_state_template: GameState,
 	pub map_name: String,
 	pub owner: String,
-	pub best_owner_completion_time: Option<f32>,
-	pub current_time: f32,
-	pub record_time: f32,
 }
 
 impl LoadedMap {
@@ -97,9 +94,6 @@ impl LoadedMap {
 			game_state_template: game_state,
 			map_name,
 			owner: my_name,
-			best_owner_completion_time: None,
-			current_time: 0.0,
-			record_time: f32::MAX,
 		}
 	}
 
@@ -117,8 +111,11 @@ impl LoadedMap {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct GameState {
 	world_grid: WorldGrid<WorldSquare>,
-	obstacles:  Vec<ObstacleEnum>,
-	player:     Player,
+	obstacles: Vec<ObstacleEnum>,
+	player: Player,
+	pub best_owner_completion_time: Option<f32>,
+	pub current_time: f32,
+	pub record_time: f32,
 }
 
 impl GameState {
@@ -134,16 +131,15 @@ impl GameState {
 		*world_grid.get_mut(8, 10) = WorldSquare::GoalSquare;
 
 		let mut game_state = Self {
+			best_owner_completion_time: None,
+			current_time: 0.0,
+			record_time: f32::MAX,
 			world_grid,
 			player: Player::new(),
-			obstacles: vec![SpinnyCircle::create(
-				Point2::new(3.0, 9.0),
-				4,
-				0.2,
-				0.4,
-				2.0,
-				0.3,
-			)],
+			obstacles: vec![
+				SpinnyCircle::create(Point2::new(3.0, 9.0), 4, 0.2, 0.4, 2.0, 0.3),
+				SpinnyCircle::create(Point2::new(8.0, 7.0), 3, 0.7, 1.0, 4.0, 0.15),
+			],
 		};
 
 		game_state.reset();
@@ -163,7 +159,7 @@ impl GameState {
 struct MyGame {
 	loaded_map:   Option<LoadedMap>,
 	egui_backend: EguiBackend,
-	db: Db,
+	db:           Db,
 }
 
 impl MyGame {
@@ -171,7 +167,7 @@ impl MyGame {
 		MyGame {
 			loaded_map:   Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
 			egui_backend: EguiBackend::new(ctx),
-			db: Db::init(),
+			db:           Db::init(),
 		}
 	}
 }
