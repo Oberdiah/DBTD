@@ -11,13 +11,15 @@ pub mod world_grid;
 pub mod player;
 pub mod obstacles;
 pub mod databases;
+pub mod common;
 
-use cgmath::{InnerSpace, Vector2};
+use cgmath::{InnerSpace, Point2, Vector2};
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color};
+use ggez::graphics::{self, Canvas, Color};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::KeyCode;
 use serde::{Deserialize, Serialize};
+use crate::common::Point2Addons;
 use crate::obstacles::{Obstacle, ObstacleEnum};
 use crate::player::Player;
 use crate::world_grid::WorldGrid;
@@ -28,10 +30,6 @@ pub const MAP_SIZE_Y: usize = 15;
 
 fn main() {
     let mut db = Db::init();
-    db.make_player("Legend");
-
-    return;
-
 
     // Make a Context.
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
@@ -126,21 +124,25 @@ impl EventHandler for MyGame {
 
         let player_position = self.game_state.player.position;
 
-        let rect = graphics::Rect::new(player_position.x, player_position.y, 50.0, 50.0);
-        canvas.draw(
-            &graphics::Quad,
-            graphics::DrawParam::new()
-                .dest(rect.point())
-                .scale(rect.size())
-                .color(Color::WHITE),
-        );
-
         for (point, square) in self.game_state.world_grid.iter_mut() {
-
+            draw_rect(&mut canvas, point.to_f32(), Point2::new(1.0, 1.0), square.get_color());
         }
 
         canvas.finish(ctx)?;
 
         Ok(())
     }
+}
+
+fn draw_rect(canvas: &mut Canvas, world_space_pos: Point2<f32>, world_size: Point2<f32>, color: Color) {
+    let player_position = world_space_pos * 5.0;
+
+    let rect = graphics::Rect::new(player_position.x, player_position.y, world_size.x, world_size.y);
+    canvas.draw(
+        &graphics::Quad,
+        graphics::DrawParam::new()
+            .dest(rect.point())
+            .scale(rect.size())
+            .color(color),
+    );
 }

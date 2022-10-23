@@ -1,5 +1,6 @@
 use std::iter;
 use cgmath::Point2;
+use itertools::enumerate;
 use crate::{Deserialize, MAP_SIZE_X, MAP_SIZE_Y, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -20,7 +21,11 @@ impl <T: Clone> WorldGrid<T> {
 
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point2<usize>, &mut T)> {
 		iter::from_generator(|| {
-			yield (Point2::new(0, 0), &mut self.grid[0][0])
+			for (x, a) in self.grid.iter_mut().enumerate() {
+				for (y, b) in a.iter_mut().enumerate() {
+					yield (Point2::new(x, y), b)
+				}
+			}
 		})
 	}
 }
