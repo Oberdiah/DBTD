@@ -123,22 +123,17 @@ impl GameState {
 		*world_grid.get_mut(3, 9) = WorldSquare::StartingSquare;
 		*world_grid.get_mut(8, 10) = WorldSquare::GoalSquare;
 
-		let mut spinny = obstacles::SpinnyCircle {
-			centre:        Point2::new(0.0, 0.0),
-			current_pos:   0.0,
-			chain_length:  0,
-			chain_spacing: 0.0,
-			circle_size:   0.0,
-			radius:        0.0,
-			speed:         0.0,
-		};
-
-		let me = ObstacleEnum::from(spinny);
-
 		let mut game_state = Self {
 			world_grid,
 			player: Player::new(),
-			obstacles: vec![],
+			obstacles: vec![SpinnyCircle::create(
+				Point2::new(3.0, 9.0),
+				4,
+				0.1,
+				0.2,
+				1.5,
+				0.1,
+			)],
 		};
 
 		game_state.reset();
@@ -209,6 +204,10 @@ impl EventHandler for MyGame {
 				draw_rect_raw(ctx, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
 			}
 			draw_rect_raw(ctx, Color::RED, player_position, Point2::new(0.5, 0.5));
+
+			for obstacle in &mut game_state.obstacles {
+				obstacle.render(ctx);
+			}
 		}
 
 		draw(ctx, &self.egui_backend, ([0.0, 0.0],))?;

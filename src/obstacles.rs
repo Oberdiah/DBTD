@@ -1,4 +1,4 @@
-use cgmath::Point2;
+use cgmath::{EuclideanSpace, Point2};
 use enum_dispatch::enum_dispatch;
 use ggez::graphics::Color;
 use ggez::Context;
@@ -20,22 +20,54 @@ pub enum ObstacleEnum {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SpinnyCircle {
-	pub centre:        Point2<f32>,
-	pub current_pos:   f32, // From 0 to 1, where 1 is a full rotation.
-	pub chain_length:  u32,
-	pub chain_spacing: f32,
-	pub circle_size:   f32,
-	pub radius:        f32,
-	pub speed:         f32,
+	pub parent_position: Point2<f32>,
+	pub current_time:    f32, // From 0 to 1, where 1 is a full rotation.
+	pub child_count:     u32,
+	pub child_spacing:   f32,
+	pub child_radius:    f32,
+	pub parent_radius:   f32,
+	pub child_speed:     f32,
+}
+impl SpinnyCircle {
+	pub fn create(
+		position: Point2<f32>,
+		chain_length: u32,
+		chain_spacing: f32,
+		circle_size: f32,
+		radius: f32,
+		speed: f32,
+	) -> ObstacleEnum {
+		let mut spinny = SpinnyCircle {
+			parent_position: position,
+			current_time:    0.0,
+			child_count:     chain_length,
+			child_spacing:   chain_spacing,
+			child_radius:    circle_size,
+			parent_radius:   radius,
+			child_speed:     speed,
+		};
+
+		ObstacleEnum::from(spinny)
+	}
 }
 
 impl Obstacle for SpinnyCircle {
 	fn render(&self, ctx: &mut Context) {
-		crate::draw_rect_raw(ctx, Color::YELLOW, self.centre, Point2::new(self.radius, self.radius));
-		todo!()
+		for child_index in 0..self.child_count {
+			// let angle = child_index as f32 * self.child_spacing + self.current_time * 2.0 * std::f32::consts::PI;
+			// let point_centre = ;
+			// crate::draw_rect_raw(ctx, Color::YELLOW, point_centre,
+			// 					 Point2::new(self.child_radius, self.child_radius)
+			// )
+		}
 	}
 
-	fn update(&mut self, delta_time: f32) {}
+	fn update(&mut self, delta_time: f32) {
+		self.current_time += self.child_speed * delta_time;
+		if self.current_time > 1.0 {
+			self.current_time -= 1.0;
+		}
+	}
 }
 
 #[derive(Clone, Serialize, Deserialize)]
