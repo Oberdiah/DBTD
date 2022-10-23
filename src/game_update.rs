@@ -77,13 +77,20 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 		}
 	}
 
-	if should_reset {
-		game_state.reset();
-	}
-
 	game_state.player.position += player_pos_delta;
 
 	// Now see if player dies.
+	for obstacle in &game_state.obstacles {
+		if obstacle.does_player_die(&game_state.player) {
+			should_reset = true;
+			println!("RIP");
+		}
+	}
+
+	if should_reset {
+		loaded_map.game_state = loaded_map.game_state_template.clone();
+		loaded_map.game_state.reset();
+	}
 }
 pub fn get_player_rect(player: &Player, position_delta: Vector2<f32>) -> Rect {
 	Rect::new(
