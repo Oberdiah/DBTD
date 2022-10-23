@@ -126,14 +126,10 @@ impl GameState {
 		let mut game_state = Self {
 			world_grid,
 			player: Player::new(),
-			obstacles: vec![SpinnyCircle::create(
-				Point2::new(3.0, 9.0),
-				4,
-				0.2,
-				0.4,
-				2.0,
-				0.3,
-			)],
+			obstacles: vec![
+				SpinnyCircle::create(Point2::new(3.0, 9.0), 4, 0.2, 0.4, 2.0, 0.3),
+				SpinnyCircle::create(Point2::new(8.0, 7.0), 3, 0.7, 1.0, 4.0, 0.15),
+			],
 		};
 
 		game_state.reset();
