@@ -62,15 +62,15 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 				WorldSquare::StartingSquare => {}
 				WorldSquare::GoalSquare => {
 					if get_my_name() == loaded_map.owner {
-						loaded_map.best_owner_completion_time = Some(loaded_map.current_time);
+						game_state.best_owner_completion_time = Some(game_state.current_time);
 					} else {
-						if let Some(completion_time) = loaded_map.best_owner_completion_time {
-							if loaded_map.current_time < completion_time {
+						if let Some(completion_time) = game_state.best_owner_completion_time {
+							if game_state.current_time < completion_time {
 								println!("You beat the time!");
 							}
 						}
 					}
-					loaded_map.record_time = loaded_map.record_time.max(loaded_map.current_time);
+					game_state.record_time = game_state.record_time.max(game_state.current_time);
 					should_reset = true;
 				}
 			}
