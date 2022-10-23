@@ -29,7 +29,8 @@ use crate::player::Player;
 use crate::world_grid::WorldGrid;
 use crate::databases::*;
 use egui::*;
-use ggez_egui::EguiBackend;
+use ggez::context::quit;
+use ggez_egui_modified::EguiBackend;
 use crate::game_update::update_game;
 use crate::login_manager::get_my_name;
 
@@ -145,10 +146,10 @@ struct MyGame {
 }
 
 impl MyGame {
-    pub fn new(_ctx: &mut Context) -> MyGame {
+    pub fn new(ctx: &mut Context) -> MyGame {
         MyGame {
             loaded_map: Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
-            egui_backend: EguiBackend::default(),
+            egui_backend: EguiBackend::new(ctx),
         }
     }
 }
@@ -161,28 +162,19 @@ impl EventHandler for MyGame {
             if ui.button("print \"hello world\"").clicked() {
                 println!("hello world");
             }
+            if ui.button("quit").clicked() {
+                quit(ctx);
+            }
         });
+
+        self.egui_backend.update(ctx);
+
         if let Some(loaded_map) = &mut self.loaded_map {
             update_game(loaded_map, ctx);
         }
 
         Ok(())
     }
-
-    // fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) -> Result<(), GameError>{
-    //     self.egui_backend.input.mouse_button_down_event(button);
-    //     Ok(())
-    // }
-    //
-    // fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) -> Result<(), GameError>{
-    //     self.egui_backend.input.mouse_button_up_event(button);
-    //     Ok(())
-    // }
-    //
-    // fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32)  -> Result<(), GameError>{
-    //     self.egui_backend.input.mouse_motion_event(x, y);
-    //     Ok(())
-    // }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         unsafe { WINDOW_SIZE = Point2::new(ctx.gfx.drawable_size().0, ctx.gfx.drawable_size().1); }
@@ -202,8 +194,7 @@ impl EventHandler for MyGame {
             draw_rect_raw(&mut canvas, Color::RED, player_position, Point2::new(0.5, 0.5));
         }
 
-        // ggez::graphics::draw(&mut canvas, &self.egui_backend, graphics::DrawParam::default());
-        // canvas.draw(&self.egui_backend, graphics::DrawParam::default());
+        canvas.draw(&self.egui_backend, graphics::DrawParam::default());
         canvas.finish(ctx)?;
 
         Ok(())
