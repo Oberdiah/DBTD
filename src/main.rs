@@ -71,7 +71,10 @@ impl GameState {
     pub fn new_empty_state() -> Self {
         let mut world_grid = WorldGrid::new_from(WorldSquare::Air);
 
-        *world_grid.get_mut(5, 5) = WorldSquare::Wall;
+        for i in 0..7 {
+            *world_grid.get_mut(i, i) = WorldSquare::Wall;
+            *world_grid.get_mut(i, 6) = WorldSquare::Wall;
+        }
 
         Self {
             world_grid,
@@ -84,36 +87,37 @@ impl GameState {
 
 
 struct MyGame {
-    game_state: GameState,
+    game_state: Option<GameState>,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         MyGame {
-            game_state: GameState::new_empty_state(),
+            game_state: Some(GameState::new_empty_state()),
         }
     }
 }
 
 impl EventHandler for MyGame {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let player_speed = self.game_state.player.speed;
-        let mut player_pos_delta = Vector2::new(0.0, 0.0);
-        if ctx.keyboard.is_key_pressed(KeyCode::W) {
-            player_pos_delta.y -= player_speed;
-        }
-        if ctx.keyboard.is_key_pressed(KeyCode::A) {
-            player_pos_delta.x -= player_speed;
-        }
-        if ctx.keyboard.is_key_pressed(KeyCode::S) {
-            player_pos_delta.y += player_speed;
-        }
-        if ctx.keyboard.is_key_pressed(KeyCode::D) {
-            player_pos_delta.x += player_speed;
-        }
+        if let Some(game_state) = &mut self.game_state {
+            let mut player_pos_delta = Vector2::new(0.0, 0.0);
+            if ctx.keyboard.is_key_pressed(KeyCode::W) {
+                player_pos_delta.y -= 1.0;
+            }
+            if ctx.keyboard.is_key_pressed(KeyCode::A) {
+                player_pos_delta.x -= 1.0;
+            }
+            if ctx.keyboard.is_key_pressed(KeyCode::S) {
+                player_pos_delta.y += 1.0;
+            }
+            if ctx.keyboard.is_key_pressed(KeyCode::D) {
+                player_pos_delta.x += 1.0;
+            }
 
-        if player_pos_delta.magnitude() > 0.0 {
-            self.game_state.player.position += player_pos_delta.normalize();
+            if player_pos_delta.magnitude() > 0.0 {
+                game_state.player.position += player_pos_delta.normalize() * game_state.player.speed;
+            }
         }
 
         Ok(())
@@ -127,13 +131,16 @@ impl EventHandler for MyGame {
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
-        let player_position = self.game_state.player.position;
+        if let Some(game_state) = &mut self.game_state {
+            let player_position = game_state.player.position;
 
-
-        for (point, square) in self.game_state.world_grid.iter_mut() {
-            draw_rect(&mut canvas, point.to_f32(), Point2::new(1.0, 1.0), square.get_color());
+            for (point, square) in game_state.world_grid.iter_mut() {
+                draw_rect(&mut canvas, point.to_f32(), Point2::new(1.0, 1.0), square.get_color());
+            }
+            draw_rect(&mut canvas, player_position, Point2::new(0.5, 0.5), Color::RED);
         }
-        draw_rect(&mut canvas, player_position, Point2::new(0.5, 0.5), Color::RED);
+
+
 
         canvas.finish(ctx)?;
 
