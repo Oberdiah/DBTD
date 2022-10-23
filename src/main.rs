@@ -18,8 +18,8 @@ pub mod login_manager;
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 use ggez::{Context, ContextBuilder, GameError, GameResult};
 use ggez::conf::WindowMode;
-use ggez::event::{self, EventHandler, MouseButton};
-use ggez::graphics::{self, Canvas, Color, draw, Rect};
+use ggez::event::{self, EventHandler, MouseButton, quit};
+use ggez::graphics::{self, Canvas, Color, draw, Drawable, Rect};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::position;
 use serde::{Deserialize, Serialize};
@@ -29,8 +29,8 @@ use crate::player::Player;
 use crate::world_grid::WorldGrid;
 use crate::databases::*;
 use egui::*;
-use ggez::context::quit;
-use ggez_egui_modified::EguiBackend;
+use ggez_egui::EguiBackend;
+use itertools::Itertools;
 use crate::game_update::update_game;
 use crate::login_manager::get_my_name;
 
@@ -92,16 +92,6 @@ impl LoadedMap {
             obstacles: vec![],
             map_name,
             owner: my_name
-        }
-    }
-    pub fn load_from_db(database: &mut Db, map_name: &str) -> Self{
-        let map = database.get_map(map_name).unwrap();
-        let obstacles = database.get_obstacles(map_name).unwrap();
-        LoadedMap {
-            game_state: map.game_state,
-            obstacles,
-            map_name: map.map_name,
-            owner: map.owner,
         }
     }
 }
@@ -179,8 +169,6 @@ impl EventHandler for MyGame {
             }
         });
 
-        self.egui_backend.update(ctx);
-
         if let Some(loaded_map) = &mut self.loaded_map {
             update_game(loaded_map, ctx);
         }
@@ -189,27 +177,35 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        unsafe { WINDOW_SIZE = Point2::new(ctx.gfx.drawable_size().0, ctx.gfx.drawable_size().1); }
+        graphics::clear(ctx, Color::WHITE);
 
-        let mut canvas = graphics::Canvas::from_frame(
-            ctx,
-            graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
-        );
+        unsafe { WINDOW_SIZE = Point2::new(graphics::size(ctx).0, graphics::size(ctx).1); }
 
         if let Some(loaded_map) = &mut self.loaded_map {
             let mut game_state = &mut loaded_map.game_state;
             let player_position = game_state.player.position;
 
             for (point, square) in game_state.world_grid.iter_mut() {
-                draw_rect_raw(&mut canvas, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
+                draw_rect_raw(ctx, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
             }
-            draw_rect_raw(&mut canvas, Color::RED, player_position, Point2::new(0.5, 0.5));
+            draw_rect_raw(ctx, Color::RED, player_position, Point2::new(0.5, 0.5));
         }
 
-        canvas.draw(&self.egui_backend, graphics::DrawParam::default());
-        canvas.finish(ctx)?;
+        draw(ctx, &self.egui_backend, ([0.0, 0.0],))?;
 
-        Ok(())
+        graphics::present(ctx)
+    }
+
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+        self.egui_backend.input.mouse_button_down_event(button);
+    }
+
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+        self.egui_backend.input.mouse_button_up_event(button);
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.egui_backend.input.mouse_motion_event(x, y);
     }
 }
 
@@ -241,25 +237,25 @@ pub fn world_space_to_screen_space(world_space: Point2<f32>) -> Point2<f32> {
     world_space * size_of_one_square() + screen_offset()
 }
 
-fn draw_rect(canvas: &mut Canvas, color: Color, world_space_rect: Rect) {
+fn draw_rect(ctx: &mut Context, color: Color, world_space_rect: Rect) {
     draw_rect_raw(
-        canvas,
+        ctx,
         color,
         Point2::new(world_space_rect.x, world_space_rect.y),
         Point2::new(world_space_rect.w, world_space_rect.h),
     );
 }
 
-fn draw_rect_raw(canvas: &mut Canvas, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
+fn draw_rect_raw(ctx: &mut Context, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
     let position = world_space_to_screen_space(world_space_pos);
     let size = world_size * size_of_one_square();
     let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
 
-    canvas.draw(
-        &graphics::Quad,
-        graphics::DrawParam::new()
-            .dest(rect.point())
-            .scale(rect.size())
-            .color(color),
-    );
+    let rectangle1 = graphics::Mesh::new_rectangle(
+        ctx,
+        graphics::DrawMode::fill(),
+        rect,
+        color,
+    ).unwrap();
+    graphics::draw(ctx, &rectangle1, ([0.0, 0.0],)).unwrap();
 }

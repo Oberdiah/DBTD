@@ -45,7 +45,7 @@ impl Db{
 				Params::Positional(vec![mysql::Value::from(finished), mysql::Value::from(map_name)],),
 			]).unwrap();
 	}
-	pub fn get_map(&mut self, map_name: &str) -> Option<(String, Vec<u8>)>{
+	pub fn get_map(&mut self, map_name: &str) -> Option<Vec<u8>>{
 		let mut result = self.conn.exec_iter(
 			"SELECT map_data FROM maps WHERE map_name = ?;",
 				Params::Positional(vec![mysql::Value::from(map_name)],),

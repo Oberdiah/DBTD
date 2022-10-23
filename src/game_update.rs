@@ -1,24 +1,24 @@
 use crate::{GameState, get_my_name, LoadedMap, Player, WorldSquare};
 use ggez::input::keyboard::KeyCode;
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
-use ggez::Context;
-use ggez::context::Has;
+use ggez::{Context, input};
 use ggez::graphics::Rect;
 
 pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 	let mut game_state = &mut loaded_map.game_state;
 
 	let mut player_pos_delta = Vector2::new(0.0, 0.0);
-	if ctx.keyboard.is_key_pressed(KeyCode::W) {
+
+	if input::keyboard::is_key_pressed(ctx,KeyCode::W) {
 		player_pos_delta.y -= 1.0;
 	}
-	if ctx.keyboard.is_key_pressed(KeyCode::A) {
+	if input::keyboard::is_key_pressed(ctx,KeyCode::A) {
 		player_pos_delta.x -= 1.0;
 	}
-	if ctx.keyboard.is_key_pressed(KeyCode::S) {
+	if input::keyboard::is_key_pressed(ctx,KeyCode::S) {
 		player_pos_delta.y += 1.0;
 	}
-	if ctx.keyboard.is_key_pressed(KeyCode::D) {
+	if input::keyboard::is_key_pressed(ctx,KeyCode::D) {
 		player_pos_delta.x += 1.0;
 	}
 

@@ -1,5 +1,4 @@
 use cgmath::{Point2, Vector2};
-use ggez::glam::Vec2;
 use ggez::graphics::Rect;
 use crate::{Deserialize, Point2Addons, Serialize};
 
