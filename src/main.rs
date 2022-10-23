@@ -129,10 +129,10 @@ impl GameState {
 			obstacles: vec![SpinnyCircle::create(
 				Point2::new(3.0, 9.0),
 				4,
-				0.1,
 				0.2,
-				1.5,
-				0.1,
+				0.4,
+				2.0,
+				0.3,
 			)],
 		};
 

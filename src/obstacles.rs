@@ -54,11 +54,19 @@ impl SpinnyCircle {
 impl Obstacle for SpinnyCircle {
 	fn render(&self, ctx: &mut Context) {
 		for child_index in 0..self.child_count {
-			// let angle = child_index as f32 * self.child_spacing + self.current_time * 2.0 * std::f32::consts::PI;
-			// let point_centre = ;
-			// crate::draw_rect_raw(ctx, Color::YELLOW, point_centre,
-			// 					 Point2::new(self.child_radius, self.child_radius)
-			// )
+			let angle =
+				child_index as f32 * self.child_spacing + self.current_time * 2.0 * std::f32::consts::PI;
+			let child_position = Point2::new(
+				self.parent_position.x + self.parent_radius * angle.cos(),
+				self.parent_position.y + self.parent_radius * angle.sin(),
+			);
+
+			crate::draw_rect_raw(
+				ctx,
+				Color::YELLOW,
+				child_position,
+				Point2::new(self.child_radius, self.child_radius),
+			)
 		}
 	}
 
