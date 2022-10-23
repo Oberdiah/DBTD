@@ -1,5 +1,6 @@
 use cgmath::{Point2, Vector2};
 use ggez::graphics::Rect;
+
 use crate::{Deserialize, Point2Addons, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -18,8 +19,8 @@ impl Player {
 	pub fn new() -> Self {
 		Player {
 			position: Point2::new(2.0, 5.0),
-			speed: 0.1,
-			size: Vector2::new(0.5, 0.5),
+			speed:    0.2,
+			size:     Vector2::new(0.5, 0.5),
 		}
 	}
 
