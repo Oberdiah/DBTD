@@ -14,12 +14,10 @@ pub mod databases;
 pub mod common;
 
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::{Context, ContextBuilder, GameError, GameResult};
 use ggez::conf::WindowMode;
-use ggez::graphics::{self, Canvas, Color, draw};
 use ggez::event::{self, EventHandler, MouseButton};
-use ggez::graphics::{self, Canvas, Color, Rect};
-use ggez::event::{self, EventHandler};
+use ggez::graphics::{self, Canvas, Color, draw, Rect};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::position;
 use serde::{Deserialize, Serialize};
@@ -28,8 +26,8 @@ use crate::obstacles::{Obstacle, ObstacleEnum};
 use crate::player::Player;
 use crate::world_grid::WorldGrid;
 use crate::databases::*;
-use egui::*;
-use egui_ggez::*;
+use ggez_egui::{egui, EguiBackend};
+
 
 pub const MAP_SIZE_X: usize = 25;
 pub const MAP_SIZE_Y: usize = 15;
@@ -96,14 +94,14 @@ impl GameState {
 
 struct MyGame {
     game_state: Option<GameState>,
-    egui_backend: egui_ggez::EguiBackend,
+    egui_backend: EguiBackend,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         MyGame {
             game_state: Some(GameState::new_empty_state()),
-            egui_backend: egui_ggez::EguiBackend::default(),
+            egui_backend: EguiBackend::default(),
         }
     }
 }
@@ -147,22 +145,25 @@ impl EventHandler for MyGame {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
-        self.egui_backend.input.mouse_button_down_event(button);
-    }
-
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
-        self.egui_backend.input.mouse_button_up_event(button);
-    }
-
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.egui_backend.input.mouse_motion_event(x, y);
-    }
+    // fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) -> Result<(), GameError>{
+    //     self.egui_backend.input.mouse_button_down_event(button);
+    //     Ok(())
+    // }
+    //
+    // fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) -> Result<(), GameError>{
+    //     self.egui_backend.input.mouse_button_up_event(button);
+    //     Ok(())
+    // }
+    //
+    // fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32)  -> Result<(), GameError>{
+    //     self.egui_backend.input.mouse_motion_event(x, y);
+    //     Ok(())
+    // }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         unsafe { WINDOW_SIZE = Point2::new(ctx.gfx.drawable_size().0, ctx.gfx.drawable_size().1); }
 
-        let mut canvas = graphics::Canvas::from_frame(
+        let mut canvas = Canvas::from_frame(
             ctx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
@@ -175,8 +176,8 @@ impl EventHandler for MyGame {
             }
             draw_rect_raw(&mut canvas, Color::RED, player_position, Point2::new(0.5, 0.5));
         }
-
-        draw(&mut canvas, &self.egui_backend, ([0.0, 0.0], ))?;
+        // ggez::graphics::draw(&mut canvas, &self.egui_backend, graphics::DrawParam::default());
+        canvas.draw(&self.egui_backend, graphics::DrawParam::default());
         canvas.finish(ctx)?;
 
         Ok(())
@@ -223,7 +224,7 @@ fn draw_rect(canvas: &mut Canvas, color: Color, world_space_rect: Rect) {
 fn draw_rect_raw(canvas: &mut Canvas, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
     let position = world_space_to_screen_space(world_space_pos);
     let size = world_size * size_of_one_square();
-    let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
+    let rect = Rect::new(position.x, position.y, size.x, size.y);
 
     canvas.draw(
         &graphics::Quad,
