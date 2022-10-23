@@ -1,24 +1,31 @@
-use crate::{GameState, get_my_name, LoadedMap, Player, WorldSquare};
-use ggez::input::keyboard::KeyCode;
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
-use ggez::{Context, input};
 use ggez::graphics::Rect;
+use ggez::input::keyboard::KeyCode;
+use ggez::{input, Context};
+
+use crate::obstacles::*;
+use crate::{get_my_name, GameState, LoadedMap, Player, WorldSquare};
 
 pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 	let mut game_state = &mut loaded_map.game_state;
 
+	// Call update on each obstacle:
+	for obstacle in &mut game_state.obstacles {
+		obstacle.update(1. / 60.);
+	}
+
 	let mut player_pos_delta = Vector2::new(0.0, 0.0);
 
-	if input::keyboard::is_key_pressed(ctx,KeyCode::W) {
+	if input::keyboard::is_key_pressed(ctx, KeyCode::W) {
 		player_pos_delta.y -= 1.0;
 	}
-	if input::keyboard::is_key_pressed(ctx,KeyCode::A) {
+	if input::keyboard::is_key_pressed(ctx, KeyCode::A) {
 		player_pos_delta.x -= 1.0;
 	}
-	if input::keyboard::is_key_pressed(ctx,KeyCode::S) {
+	if input::keyboard::is_key_pressed(ctx, KeyCode::S) {
 		player_pos_delta.y += 1.0;
 	}
-	if input::keyboard::is_key_pressed(ctx,KeyCode::D) {
+	if input::keyboard::is_key_pressed(ctx, KeyCode::D) {
 		player_pos_delta.x += 1.0;
 	}
 
@@ -28,7 +35,6 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 
 	let new_player_rect = get_player_rect(&game_state.player, player_pos_delta);
 	let mut should_reset = false;
-
 
 	for (point, square) in game_state.world_grid.iter_mut() {
 		let square_rect = WorldSquare::get_rect(point);
@@ -40,12 +46,14 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 				WorldSquare::Air => {}
 				WorldSquare::Wall => {
 					// Now split into x and y, and check again. For wall sliding. (loh)
-					let x_moved_player = get_player_rect(&game_state.player, Vector2::new(player_pos_delta.x, 0.0));
-					let y_moved_player = get_player_rect(&game_state.player, Vector2::new(0.0, player_pos_delta.y));
-					if x_moved_player.overlaps(&square_rect){
+					let x_moved_player =
+						get_player_rect(&game_state.player, Vector2::new(player_pos_delta.x, 0.0));
+					let y_moved_player =
+						get_player_rect(&game_state.player, Vector2::new(0.0, player_pos_delta.y));
+					if x_moved_player.overlaps(&square_rect) {
 						player_pos_delta.x = 0.0;
 					}
-					if y_moved_player.overlaps(&square_rect){
+					if y_moved_player.overlaps(&square_rect) {
 						player_pos_delta.y = 0.0;
 					}
 				}
@@ -54,15 +62,15 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 				WorldSquare::StartingSquare => {}
 				WorldSquare::GoalSquare => {
 					if get_my_name() == loaded_map.owner {
-						game_state.best_owner_completion_time = Some(game_state.current_time);
+						loaded_map.best_owner_completion_time = Some(loaded_map.current_time);
 					} else {
-						if let Some(completion_time) = game_state.best_owner_completion_time {
-							if game_state.current_time < completion_time {
+						if let Some(completion_time) = loaded_map.best_owner_completion_time {
+							if loaded_map.current_time < completion_time {
 								println!("You beat the time!");
 							}
 						}
 					}
-					game_state.record_time = game_state.record_time.max(game_state.current_time);
+					loaded_map.record_time = loaded_map.record_time.max(loaded_map.current_time);
 					should_reset = true;
 				}
 			}
@@ -74,12 +82,14 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 	}
 
 	game_state.player.position += player_pos_delta;
+
+	// Now see if player dies.
 }
-pub fn get_player_rect(player: &Player, position_delta: Vector2<f32>) -> Rect{
-	 Rect::new(
+pub fn get_player_rect(player: &Player, position_delta: Vector2<f32>) -> Rect {
+	Rect::new(
 		player.position.x + position_delta.x,
 		player.position.y + position_delta.y,
 		player.size.x,
-		player.size.y
+		player.size.y,
 	)
 }
