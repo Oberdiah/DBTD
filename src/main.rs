@@ -80,6 +80,7 @@ impl WorldSquare {
 
 pub struct LoadedMap {
     pub game_state: GameState,
+    pub obstacles: Vec<ObstacleEnum>,
     pub map_name: String,
     pub owner: String,
 }
@@ -88,8 +89,19 @@ impl LoadedMap {
     pub fn new_empty_map(my_name: String, map_name: String) -> LoadedMap {
         LoadedMap {
             game_state: GameState::new_empty_state(),
+            obstacles: vec![],
             map_name,
             owner: my_name
+        }
+    }
+    pub fn load_from_db(database: &mut Db, map_name: &str) -> Self{
+        let map = database.get_map(map_name).unwrap();
+        let obstacles = database.get_obstacles(map_name).unwrap();
+        LoadedMap {
+            game_state: map.game_state,
+            obstacles,
+            map_name: map.map_name,
+            owner: map.owner,
         }
     }
 }
