@@ -49,15 +49,15 @@ impl Db {
 			.unwrap();
 	}
 
-	pub fn get_map(&mut self, map_name: &str) -> Option<Vec<u8>> {
+	pub fn get_map_and_owner(&mut self, map_name: &str) -> Option<(String, Vec<u8>)> {
 		let mut result = self
 			.conn
-			.exec_iter(
-				"SELECT map_data FROM maps WHERE map_name = ?;",
-				Params::Positional(vec![mysql::Value::from(map_name)]),
-			)
+			.exec_iter("SELECT owner, map_data FROM maps WHERE map_name = ?;", vec![map_name])
 			.unwrap();
-		return result.next()?.unwrap().take(0)?;
+		let row = result.next().unwrap().unwrap();
+		let owner = row.get::<String, _>(0).unwrap();
+		let map_data = row.get::<Vec<u8>, _>(1).unwrap();
+		Some((owner, map_data))
 	}
 
 	pub fn get_finished_maps(&mut self) -> Vec<String> {
