@@ -12,6 +12,8 @@ pub mod player;
 pub mod obstacles;
 pub mod databases;
 pub mod common;
+pub mod game_update;
+pub mod login_manager;
 
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 use ggez::{Context, ContextBuilder, GameError, GameResult};
@@ -26,8 +28,10 @@ use crate::obstacles::{Obstacle, ObstacleEnum};
 use crate::player::Player;
 use crate::world_grid::WorldGrid;
 use crate::databases::*;
-use ggez_egui::{egui, EguiBackend};
-
+use egui::*;
+use ggez_egui::EguiBackend;
+use crate::game_update::update_game;
+use crate::login_manager::get_my_name;
 
 pub const MAP_SIZE_X: usize = 25;
 pub const MAP_SIZE_Y: usize = 15;
@@ -50,6 +54,9 @@ enum WorldSquare {
     Air,
     Wall,
     Fire,
+    Slime,
+    StartingSquare,
+    GoalSquare,
 }
 
 impl WorldSquare {
@@ -58,6 +65,9 @@ impl WorldSquare {
             WorldSquare::Air => Color::WHITE,
             WorldSquare::Wall => Color::from((0.2, 0.1, 0.2)),
             WorldSquare::Fire => Color::from((0.8, 0.2, 0.2)),
+            WorldSquare::Slime => Color::from((0.1, 0.5, 0.2)),
+            WorldSquare::StartingSquare => Color::from((0.1, 0.1, 0.1)),
+            WorldSquare::GoalSquare => Color::GREEN,
         }
     }
 
@@ -67,11 +77,30 @@ impl WorldSquare {
     }
 }
 
+pub struct LoadedMap {
+    pub game_state: GameState,
+    pub map_name: String,
+    pub owner: String,
+}
+
+impl LoadedMap {
+    pub fn new_empty_map(my_name: String, map_name: String) -> LoadedMap {
+        LoadedMap {
+            game_state: GameState::new_empty_state(),
+            map_name,
+            owner: my_name
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
-struct GameState {
+pub struct GameState {
     world_grid: WorldGrid<WorldSquare>,
     obstacles: Vec<ObstacleEnum>,
     player: Player,
+    best_owner_completion_time: Option<f32>,
+    current_time: f32,
+    record_time: f32,
 }
 
 impl GameState {
@@ -83,24 +112,42 @@ impl GameState {
             *world_grid.get_mut(i, 6) = WorldSquare::Wall;
         }
 
-        Self {
+        *world_grid.get_mut(3, 6) = WorldSquare::StartingSquare;
+        *world_grid.get_mut(8, 10) = WorldSquare::GoalSquare;
+
+        let mut game_state = Self {
             world_grid,
             player: Player::new(),
             obstacles: vec![],
+            best_owner_completion_time: None,
+            current_time: 0.0,
+            record_time: f32::MAX,
+        };
+
+        game_state.reset();
+
+        game_state
+    }
+
+    pub fn reset(&mut self) {
+        for (point, square) in self.world_grid.iter_mut() {
+            if let WorldSquare::StartingSquare = square {
+                self.player.teleport_to_square(point);
+            }
         }
     }
 }
 
 
 struct MyGame {
-    game_state: Option<GameState>,
+    loaded_map: Option<LoadedMap>,
     egui_backend: EguiBackend,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         MyGame {
-            game_state: Some(GameState::new_empty_state()),
+            loaded_map: Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
             egui_backend: EguiBackend::default(),
         }
     }
@@ -115,31 +162,8 @@ impl EventHandler for MyGame {
                 println!("hello world");
             }
         });
-        if let Some(game_state) = &mut self.game_state {
-            let mut player_pos_delta = Vector2::new(0.0, 0.0);
-            if ctx.keyboard.is_key_pressed(KeyCode::W) {
-                player_pos_delta.y -= 1.0;
-            }
-            if ctx.keyboard.is_key_pressed(KeyCode::A) {
-                player_pos_delta.x -= 1.0;
-            }
-            if ctx.keyboard.is_key_pressed(KeyCode::S) {
-                player_pos_delta.y += 1.0;
-            }
-            if ctx.keyboard.is_key_pressed(KeyCode::D) {
-                player_pos_delta.x += 1.0;
-            }
-
-            if player_pos_delta.magnitude() > 0.0 {
-                player_pos_delta = player_pos_delta.normalize() * game_state.player.speed;
-            }
-
-            let new_player_position = game_state.player.position + player_pos_delta;
-
-            for (point, square) in game_state.world_grid.iter_mut() {}
-
-
-            game_state.player.position += player_pos_delta;
+        if let Some(loaded_map) = &mut self.loaded_map {
+            update_game(loaded_map, ctx);
         }
 
         Ok(())
@@ -163,12 +187,13 @@ impl EventHandler for MyGame {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         unsafe { WINDOW_SIZE = Point2::new(ctx.gfx.drawable_size().0, ctx.gfx.drawable_size().1); }
 
-        let mut canvas = Canvas::from_frame(
+        let mut canvas = graphics::Canvas::from_frame(
             ctx,
             graphics::CanvasLoadOp::Clear([0.1, 0.2, 0.3, 1.0].into()),
         );
 
-        if let Some(game_state) = &mut self.game_state {
+        if let Some(loaded_map) = &mut self.loaded_map {
+            let mut game_state = &mut loaded_map.game_state;
             let player_position = game_state.player.position;
 
             for (point, square) in game_state.world_grid.iter_mut() {
@@ -176,8 +201,9 @@ impl EventHandler for MyGame {
             }
             draw_rect_raw(&mut canvas, Color::RED, player_position, Point2::new(0.5, 0.5));
         }
+
         // ggez::graphics::draw(&mut canvas, &self.egui_backend, graphics::DrawParam::default());
-        canvas.draw(&self.egui_backend, graphics::DrawParam::default());
+        // canvas.draw(&self.egui_backend, graphics::DrawParam::default());
         canvas.finish(ctx)?;
 
         Ok(())
@@ -224,7 +250,7 @@ fn draw_rect(canvas: &mut Canvas, color: Color, world_space_rect: Rect) {
 fn draw_rect_raw(canvas: &mut Canvas, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
     let position = world_space_to_screen_space(world_space_pos);
     let size = world_size * size_of_one_square();
-    let rect = Rect::new(position.x, position.y, size.x, size.y);
+    let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
 
     canvas.draw(
         &graphics::Quad,
