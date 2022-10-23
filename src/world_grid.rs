@@ -5,13 +5,13 @@ use crate::{Deserialize, MAP_SIZE_X, MAP_SIZE_Y, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WorldGrid<T: Clone> {
-	grid:  [[T; MAP_SIZE_X]; MAP_SIZE_Y],
+	grid:  [[T; MAP_SIZE_Y]; MAP_SIZE_X],
 }
 
 impl <T: Clone> WorldGrid<T> {
 	pub fn new_from(v: T) -> Self {
 		Self {
-			grid: [[0; MAP_SIZE_X]; MAP_SIZE_Y].map(|a| a.map(|_| v.clone())),
+			grid: [[0; MAP_SIZE_Y]; MAP_SIZE_X].map(|a| a.map(|_| v.clone())),
 		}
 	}
 
