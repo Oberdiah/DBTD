@@ -34,28 +34,30 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 	for (point, square) in game_state.world_grid.iter_mut() {
 		let square_rect = WorldSquare::get_rect(point);
 
-		let does_overlap = new_player_rect.overlaps(&new_player_rect);
+		let does_overlap = new_player_rect.overlaps(&square_rect);
 
-		match square {
-			WorldSquare::Air => {}
-			WorldSquare::Wall => {
-
-			}
-			WorldSquare::Fire => should_reset = true,
-			WorldSquare::Slime => player_pos_delta *= 0.0,
-			WorldSquare::StartingSquare => {}
-			WorldSquare::GoalSquare => {
-				if get_my_name() == loaded_map.owner {
-					game_state.best_owner_completion_time = Some(game_state.current_time);
-				} else {
-					if let Some(completion_time) = game_state.best_owner_completion_time {
-						if game_state.current_time < completion_time {
-							println!("You beat the time!");
+		if does_overlap {
+			match square {
+				WorldSquare::Air => {}
+				WorldSquare::Wall => {
+					
+				}
+				WorldSquare::Fire => should_reset = true,
+				WorldSquare::Slime => player_pos_delta *= 0.0,
+				WorldSquare::StartingSquare => {}
+				WorldSquare::GoalSquare => {
+					if get_my_name() == loaded_map.owner {
+						game_state.best_owner_completion_time = Some(game_state.current_time);
+					} else {
+						if let Some(completion_time) = game_state.best_owner_completion_time {
+							if game_state.current_time < completion_time {
+								println!("You beat the time!");
+							}
 						}
 					}
+					game_state.record_time = game_state.record_time.max(game_state.current_time);
+					should_reset = true;
 				}
-				game_state.record_time = game_state.record_time.max(game_state.current_time);
-				should_reset = true;
 			}
 		}
 	}

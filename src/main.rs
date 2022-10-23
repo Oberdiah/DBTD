@@ -112,7 +112,7 @@ impl GameState {
             *world_grid.get_mut(i, 6) = WorldSquare::Wall;
         }
 
-        *world_grid.get_mut(3, 6) = WorldSquare::StartingSquare;
+        *world_grid.get_mut(3, 9) = WorldSquare::StartingSquare;
         *world_grid.get_mut(8, 10) = WorldSquare::GoalSquare;
 
         let mut game_state = Self {
