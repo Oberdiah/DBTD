@@ -28,7 +28,7 @@ pub const MAP_SIZE_Y: usize = 15;
 
 fn main() {
     let mut db = Db::init();
-    db.make_player(5, "".to_string());
+    db.make_player("Legend");
 
     return;
 

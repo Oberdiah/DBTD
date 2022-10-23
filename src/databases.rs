@@ -17,11 +17,12 @@ impl Db{
 		}
 	}
 
-	pub fn make_player(&mut self, player_id: i32, player_name: String){
-		let items : Vec<i32> = self.conn.exec(
-			"INSERT INTO users
-          VALUES (5, \"Shotekri\")",
-			Params::Empty).unwrap();
+	pub fn make_player(&mut self, player_name: &str){
+		self.conn.exec_batch(
+			"INSERT INTO users (username) VALUES (?);",
+			vec![
+				Params::Positional(vec![mysql::Value::from(player_name)],),
+			]).unwrap();
 	}
 
 
