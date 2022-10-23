@@ -16,6 +16,8 @@ pub mod common;
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::WindowMode;
+use ggez::graphics::{self, Canvas, Color, draw};
+use ggez::event::{self, EventHandler, MouseButton};
 use ggez::graphics::{self, Canvas, Color, Rect};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::KeyCode;
@@ -26,6 +28,8 @@ use crate::obstacles::{Obstacle, ObstacleEnum};
 use crate::player::Player;
 use crate::world_grid::WorldGrid;
 use crate::databases::*;
+use egui::*;
+use egui_ggez::*;
 
 pub const MAP_SIZE_X: usize = 25;
 pub const MAP_SIZE_Y: usize = 15;
@@ -47,7 +51,7 @@ fn main() {
 enum WorldSquare {
     Air,
     Wall,
-    Fire
+    Fire,
 }
 
 impl WorldSquare {
@@ -90,21 +94,29 @@ impl GameState {
 }
 
 
-
 struct MyGame {
     game_state: Option<GameState>,
+    egui_backend: egui_ggez::EguiBackend,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         MyGame {
             game_state: Some(GameState::new_empty_state()),
+            egui_backend: egui_ggez::EguiBackend::default(),
         }
     }
 }
 
 impl EventHandler for MyGame {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let egui_ctx = self.egui_backend.ctx();
+        egui::Window::new("egui-window").show(&egui_ctx, |ui| {
+            ui.label("a very nice gui :3");
+            if ui.button("print \"hello world\"").clicked() {
+                println!("hello world");
+            }
+        });
         if let Some(game_state) = &mut self.game_state {
             let mut player_pos_delta = Vector2::new(0.0, 0.0);
             if ctx.keyboard.is_key_pressed(KeyCode::W) {
@@ -126,17 +138,25 @@ impl EventHandler for MyGame {
 
             let new_player_position = game_state.player.position + player_pos_delta;
 
-            for (point, square) in game_state.world_grid.iter_mut() {
-
-            }
-
+            for (point, square) in game_state.world_grid.iter_mut() {}
 
 
             game_state.player.position += player_pos_delta;
-
         }
 
         Ok(())
+    }
+
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+        self.egui_backend.input.mouse_button_down_event(button);
+    }
+
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+        self.egui_backend.input.mouse_button_up_event(button);
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.egui_backend.input.mouse_motion_event(x, y);
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
@@ -153,9 +173,10 @@ impl EventHandler for MyGame {
             for (point, square) in game_state.world_grid.iter_mut() {
                 draw_rect_raw(&mut canvas, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
             }
-            draw_rect_raw(&mut canvas,Color::RED, player_position, Point2::new(0.5, 0.5));
+            draw_rect_raw(&mut canvas, Color::RED, player_position, Point2::new(0.5, 0.5));
         }
 
+        draw(&mut canvas, &self.egui_backend, ([0.0, 0.0], ))?;
         canvas.finish(ctx)?;
 
         Ok(())
@@ -165,7 +186,7 @@ impl EventHandler for MyGame {
 static mut WINDOW_SIZE: Point2<f32> = Point2::new(5.0, 5.0);
 
 pub fn size_of_one_square() -> f32 {
-    let window_size = unsafe {WINDOW_SIZE};
+    let window_size = unsafe { WINDOW_SIZE };
     let aspect_ratio = window_size.x / window_size.y;
     let our_aspect_ratio = MAP_SIZE_X as f32 / MAP_SIZE_Y as f32;
 
@@ -181,7 +202,7 @@ pub fn game_board_screen_size() -> Point2<f32> {
 }
 
 pub fn screen_offset() -> Vector2<f32> {
-    let window_size = unsafe {WINDOW_SIZE};
+    let window_size = unsafe { WINDOW_SIZE };
     let diff = window_size - game_board_screen_size().to_vec();
     Vector2::new(diff.x / 2.0, diff.y / 2.0)
 }
@@ -193,9 +214,9 @@ pub fn world_space_to_screen_space(world_space: Point2<f32>) -> Point2<f32> {
 fn draw_rect(canvas: &mut Canvas, color: Color, world_space_rect: Rect) {
     draw_rect_raw(
         canvas,
-              color,
-              Point2::new(world_space_rect.x, world_space_rect.y),
-              Point2::new(world_space_rect.w, world_space_rect.h)
+        color,
+        Point2::new(world_space_rect.x, world_space_rect.y),
+        Point2::new(world_space_rect.w, world_space_rect.h),
     );
 }
 
