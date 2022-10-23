@@ -102,6 +102,16 @@ impl LoadedMap {
 			record_time: f32::MAX,
 		}
 	}
+
+	pub fn new_map_from_bytes(map_owner: String, map_name: String, data: Vec<u8>) -> LoadedMap {
+		let game_state: GameState = bincode::deserialize(data.as_slice()).unwrap();
+		LoadedMap {
+			game_state: game_state.clone(),
+			game_state_template: game_state,
+			map_name,
+			owner: map_owner,
+		}
+	}
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -178,7 +188,8 @@ impl EventHandler for MyGame {
 					ui.set_width(200.0);
 					ui.label(map_name.clone());
 					if ui.button("Play Level").clicked() {
-						let map_to_load = self.db.get_map(map_name.as_str()).unwrap();
+						let (owner, map_bytes) = self.db.get_map(map_name.as_str()).unwrap();
+						self.loaded_map = Some(LoadedMap::new_map_from_bytes(owner, map_name, map_bytes));
 					}
 				});
 			}
