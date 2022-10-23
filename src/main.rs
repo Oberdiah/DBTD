@@ -184,7 +184,7 @@ impl EventHandler for MyGame {
 					ui.set_width(200.0);
 					ui.label(map_name.clone());
 					if ui.button("Play Level").clicked() {
-						let (owner, map_bytes) = self.db.get_map(map_name.as_str()).unwrap();
+						let (owner, map_bytes) = self.db.get_map_and_owner(map_name.as_str()).unwrap();
 						self.loaded_map = Some(LoadedMap::new_map_from_bytes(owner, map_name, map_bytes));
 					}
 				});
