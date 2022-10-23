@@ -16,7 +16,7 @@ pub mod common;
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::WindowMode;
-use ggez::graphics::{self, Canvas, Color};
+use ggez::graphics::{self, Canvas, Color, Rect};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::position;
@@ -57,6 +57,11 @@ impl WorldSquare {
             WorldSquare::Wall => Color::from((0.2, 0.1, 0.2)),
             WorldSquare::Fire => Color::from((0.8, 0.2, 0.2)),
         }
+    }
+
+    /// In world-space
+    pub fn get_rect(pos: Point2<usize>) -> Rect {
+        Rect::new(pos.x as f32, pos.y as f32, 1.0, 1.0)
     }
 }
 
@@ -116,8 +121,19 @@ impl EventHandler for MyGame {
             }
 
             if player_pos_delta.magnitude() > 0.0 {
-                game_state.player.position += player_pos_delta.normalize() * game_state.player.speed;
+                player_pos_delta = player_pos_delta.normalize() * game_state.player.speed;
             }
+
+            let new_player_position = game_state.player.position + player_pos_delta;
+
+            for (point, square) in game_state.world_grid.iter_mut() {
+
+            }
+
+
+
+            game_state.player.position += player_pos_delta;
+
         }
 
         Ok(())
@@ -135,12 +151,10 @@ impl EventHandler for MyGame {
             let player_position = game_state.player.position;
 
             for (point, square) in game_state.world_grid.iter_mut() {
-                draw_rect(&mut canvas, point.to_f32(), Point2::new(1.0, 1.0), square.get_color());
+                draw_rect_raw(&mut canvas, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
             }
-            draw_rect(&mut canvas, player_position, Point2::new(0.5, 0.5), Color::RED);
+            draw_rect_raw(&mut canvas,Color::RED, player_position, Point2::new(0.5, 0.5));
         }
-
-
 
         canvas.finish(ctx)?;
 
@@ -176,7 +190,16 @@ pub fn world_space_to_screen_space(world_space: Point2<f32>) -> Point2<f32> {
     world_space * size_of_one_square() + screen_offset()
 }
 
-fn draw_rect(canvas: &mut Canvas, world_space_pos: Point2<f32>, world_size: Point2<f32>, color: Color) {
+fn draw_rect(canvas: &mut Canvas, color: Color, world_space_rect: Rect) {
+    draw_rect_raw(
+        canvas,
+              color,
+              Point2::new(world_space_rect.x, world_space_rect.y),
+              Point2::new(world_space_rect.w, world_space_rect.h)
+    );
+}
+
+fn draw_rect_raw(canvas: &mut Canvas, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
     let position = world_space_to_screen_space(world_space_pos);
     let size = world_size * size_of_one_square();
     let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
