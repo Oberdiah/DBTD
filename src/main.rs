@@ -160,15 +160,25 @@ struct MyGame {
 	loaded_map: Option<LoadedMap>,
 	egui_backend: EguiBackend,
 	db: Db,
+	all_finished_maps_cache: Vec<String>,
 }
 
 impl MyGame {
 	pub fn new(ctx: &mut Context) -> MyGame {
-		MyGame {
+		let mut me = MyGame {
 			loaded_map: Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
 			egui_backend: EguiBackend::new(ctx),
 			db: Db::init(),
-		}
+			all_finished_maps_cache: vec![],
+		};
+
+		me.refresh_from_db();
+
+		me
+	}
+
+	pub fn refresh_from_db(&mut self) {
+		self.all_finished_maps_cache = self.db.get_finished_maps();
 	}
 }
 
@@ -180,13 +190,14 @@ impl EventHandler for MyGame {
 			ui.spacing();
 			ui.label("All Maps:");
 
-			for map_name in self.db.get_finished_maps() {
+			for map_name in self.all_finished_maps_cache.clone() {
 				ui.horizontal(|ui| {
 					ui.set_width(200.0);
 					ui.label(map_name.clone());
 					if ui.button("Play Level").clicked() {
 						let (owner, map_bytes) = self.db.get_map_and_owner(map_name.as_str()).unwrap();
 						self.loaded_map = Some(LoadedMap::new_map_from_bytes(owner, map_name, map_bytes));
+						self.refresh_from_db();
 					}
 				});
 			}
@@ -197,6 +208,7 @@ impl EventHandler for MyGame {
 					let map_data = bincode::serialize(&loaded_map.game_state).unwrap();
 					self.db.upload_map(&get_my_name(), &loaded_map.map_name, map_data);
 					self.db.set_map_finished(&loaded_map.map_name, true);
+					self.refresh_from_db();
 				}
 			}
 			ui.spacing();
