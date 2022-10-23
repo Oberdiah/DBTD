@@ -59,7 +59,6 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 				}
 				WorldSquare::Fire => should_reset = true,
 				WorldSquare::Slime => player_pos_delta *= 0.0,
-				WorldSquare::StartingSquare => {}
 				WorldSquare::GoalSquare => {
 					if get_my_name() == loaded_map.owner {
 						game_state.best_owner_completion_time = Some(game_state.current_time);
@@ -89,7 +88,6 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 
 	if should_reset {
 		loaded_map.game_state = loaded_map.game_state_template.clone();
-		loaded_map.game_state.reset();
 	}
 }
 pub fn get_player_rect(player: &Player, position_delta: Vector2<f32>) -> Rect {

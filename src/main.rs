@@ -57,7 +57,6 @@ enum WorldSquare {
 	Wall,
 	Fire,
 	Slime,
-	StartingSquare,
 	GoalSquare,
 }
 
@@ -68,7 +67,6 @@ impl WorldSquare {
 			WorldSquare::Wall => Color::from((0.2, 0.1, 0.2)),
 			WorldSquare::Fire => Color::from((0.8, 0.2, 0.2)),
 			WorldSquare::Slime => Color::from((0.1, 0.5, 0.2)),
-			WorldSquare::StartingSquare => Color::from((0.1, 0.1, 0.1)),
 			WorldSquare::GoalSquare => Color::GREEN,
 		}
 	}
@@ -127,7 +125,6 @@ impl GameState {
 			*world_grid.get_mut(i, 6) = WorldSquare::Wall;
 		}
 
-		*world_grid.get_mut(3, 9) = WorldSquare::StartingSquare;
 		*world_grid.get_mut(8, 10) = WorldSquare::GoalSquare;
 
 		let mut game_state = Self {
@@ -142,17 +139,7 @@ impl GameState {
 			],
 		};
 
-		game_state.reset();
-
 		game_state
-	}
-
-	pub fn reset(&mut self) {
-		for (point, square) in self.world_grid.iter_mut() {
-			if let WorldSquare::StartingSquare = square {
-				self.player.teleport_to_square(point);
-			}
-		}
 	}
 }
 
@@ -229,7 +216,7 @@ impl EventHandler for MyGame {
 			ctx,
 			graphics::Rect::new(0.0, 0.0, graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1),
 		)
-			.unwrap();
+		.unwrap();
 		graphics::clear(ctx, Color::new(0.2, 0.2, 0.1, 1.0));
 
 		unsafe {
@@ -250,7 +237,7 @@ impl EventHandler for MyGame {
 			}
 		}
 
-		draw(ctx, &self.egui_backend, ([0.0, 0.0], ))?;
+		draw(ctx, &self.egui_backend, ([0.0, 0.0],))?;
 
 		graphics::present(ctx)
 	}
@@ -314,5 +301,5 @@ pub fn draw_rect_raw(ctx: &mut Context, color: Color, world_space_pos: Point2<f3
 	let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
 
 	let rectangle1 = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, color).unwrap();
-	graphics::draw(ctx, &rectangle1, ([0.0, 0.0], )).unwrap();
+	graphics::draw(ctx, &rectangle1, ([0.0, 0.0],)).unwrap();
 }
