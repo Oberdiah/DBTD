@@ -177,9 +177,10 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, Color::WHITE);
+        graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1)).unwrap();
+        graphics::clear(ctx, Color::new(0.2, 0.2, 0.1, 1.0));
 
-        unsafe { WINDOW_SIZE = Point2::new(graphics::size(ctx).0, graphics::size(ctx).1); }
+        unsafe { WINDOW_SIZE = Point2::new(graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1); }
 
         if let Some(loaded_map) = &mut self.loaded_map {
             let mut game_state = &mut loaded_map.game_state;
@@ -251,11 +252,11 @@ fn draw_rect_raw(ctx: &mut Context, color: Color, world_space_pos: Point2<f32>, 
     let size = world_size * size_of_one_square();
     let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
 
-    let rectangle1 = graphics::Mesh::new_rectangle(
+    let rectangle = graphics::Mesh::new_rectangle(
         ctx,
         graphics::DrawMode::fill(),
         rect,
         color,
     ).unwrap();
-    graphics::draw(ctx, &rectangle1, ([0.0, 0.0],)).unwrap();
+    graphics::draw(ctx, &rectangle, ([0.0, 0.0],)).unwrap();
 }
