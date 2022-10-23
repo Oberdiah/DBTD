@@ -149,6 +149,7 @@ impl GameState {
 struct MyGame {
 	loaded_map:   Option<LoadedMap>,
 	egui_backend: EguiBackend,
+	db: Db,
 }
 
 impl MyGame {
@@ -156,6 +157,7 @@ impl MyGame {
 		MyGame {
 			loaded_map:   Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
 			egui_backend: EguiBackend::new(ctx),
+			db: Db::init(),
 		}
 	}
 }
@@ -163,10 +165,18 @@ impl MyGame {
 impl EventHandler for MyGame {
 	fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 		let egui_ctx = self.egui_backend.ctx();
-		egui::Window::new("egui-window").show(&egui_ctx, |ui| {
-			ui.label("a very nice gui :3");
-			if ui.button("print \"hello world\"").clicked() {
-				println!("hello world");
+		egui::Window::new("Maps").show(&egui_ctx, |ui| {
+			ui.label(format!("Welcome, {}!", get_my_name()));
+			ui.label("All Maps");
+
+			for map_name in self.db.get_finished_maps() {
+				ui.horizontal(|ui| {
+					ui.set_width(200.0);
+					ui.label(map_name.clone());
+					if ui.button("Play Level").clicked() {
+						let map_to_load = self.db.get_map(map_name.as_str()).unwrap();
+					}
+				});
 			}
 			if ui.button("quit").clicked() {
 				quit(ctx);
