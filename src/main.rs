@@ -157,17 +157,17 @@ impl GameState {
 }
 
 struct MyGame {
-	loaded_map:   Option<LoadedMap>,
+	loaded_map: Option<LoadedMap>,
 	egui_backend: EguiBackend,
-	db:           Db,
+	db: Db,
 }
 
 impl MyGame {
 	pub fn new(ctx: &mut Context) -> MyGame {
 		MyGame {
-			loaded_map:   Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
+			loaded_map: Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
 			egui_backend: EguiBackend::new(ctx),
-			db:           Db::init(),
+			db: Db::init(),
 		}
 	}
 }
@@ -177,7 +177,8 @@ impl EventHandler for MyGame {
 		let egui_ctx = self.egui_backend.ctx();
 		egui::Window::new("Maps").show(&egui_ctx, |ui| {
 			ui.label(format!("Welcome, {}!", get_my_name()));
-			ui.label("All Maps");
+			ui.spacing();
+			ui.label("All Maps:");
 
 			for map_name in self.db.get_finished_maps() {
 				ui.horizontal(|ui| {
@@ -189,6 +190,16 @@ impl EventHandler for MyGame {
 					}
 				});
 			}
+			ui.spacing();
+			if let Some(loaded_map) = &mut self.loaded_map {
+				ui.text_edit_singleline(&mut loaded_map.map_name);
+				if ui.button("Save current map").clicked() {
+					let map_data = bincode::serialize(&loaded_map.game_state).unwrap();
+					self.db.upload_map(&get_my_name(), &loaded_map.map_name, map_data);
+					self.db.set_map_finished(&loaded_map.map_name, true);
+				}
+			}
+			ui.spacing();
 			if ui.button("quit").clicked() {
 				quit(ctx);
 			}
@@ -206,7 +217,7 @@ impl EventHandler for MyGame {
 			ctx,
 			graphics::Rect::new(0.0, 0.0, graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1),
 		)
-		.unwrap();
+			.unwrap();
 		graphics::clear(ctx, Color::new(0.2, 0.2, 0.1, 1.0));
 
 		unsafe {
@@ -227,7 +238,7 @@ impl EventHandler for MyGame {
 			}
 		}
 
-		draw(ctx, &self.egui_backend, ([0.0, 0.0],))?;
+		draw(ctx, &self.egui_backend, ([0.0, 0.0], ))?;
 
 		graphics::present(ctx)
 	}
@@ -291,5 +302,5 @@ pub fn draw_rect_raw(ctx: &mut Context, color: Color, world_space_pos: Point2<f3
 	let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
 
 	let rectangle1 = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, color).unwrap();
-	graphics::draw(ctx, &rectangle1, ([0.0, 0.0],)).unwrap();
+	graphics::draw(ctx, &rectangle1, ([0.0, 0.0], )).unwrap();
 }
