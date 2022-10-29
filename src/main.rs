@@ -323,12 +323,7 @@ pub fn draw_rect_raw(
 ) {
 	let position = world_space_to_screen_space(world_space_pos);
 	let size = world_size * size_of_one_square();
-	let rect = Rect::new(position.x, position.y, size.x, size.y);
 
-	ctx.sprite_batch.add(
-		DrawParam::new()
-			.dest([position.x, position.y])
-			.color(color)
-			.scale([size.x, size.y]),
-	);
+	ctx.sprite_batch
+		.add(DrawParam::new().dest(position).color(color).scale(size.to_vec()));
 }

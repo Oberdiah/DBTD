@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 ggez = "0.7.0"
-cgmath = { version = "0.18", features = [ "serde" ] }
+cgmath = { version = "0.18", features = [ "serde", "mint", "swizzle" ] }
 bincode = "1.3.3"
 
 mysql = "*"
