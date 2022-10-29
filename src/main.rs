@@ -24,7 +24,7 @@ use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics::{self, draw, Canvas, Color, DrawParam, Drawable, Rect};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::position;
-use ggez::{Context, ContextBuilder, GameError, GameResult};
+use ggez::{timer, Context, ContextBuilder, GameError, GameResult};
 use ggez_egui::EguiBackend;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -186,6 +186,8 @@ impl MyGame {
 
 impl EventHandler for MyGame {
 	fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+		let delta_seconds = timer::delta(ctx).as_secs_f32();
+
 		let egui_ctx = self.egui_backend.ctx();
 		Window::new("Maps").show(&egui_ctx, |ui| {
 			ui.label(format!("Welcome, {}!", get_my_name()));
@@ -220,7 +222,7 @@ impl EventHandler for MyGame {
 		});
 
 		if let Some(loaded_map) = &mut self.loaded_map {
-			update_game(loaded_map, ctx);
+			update_game(loaded_map, ctx, delta_seconds);
 		}
 
 		Ok(())

@@ -6,12 +6,12 @@ use ggez::{input, Context};
 use crate::obstacles::*;
 use crate::{get_my_name, GameState, LoadedMap, Player, WorldSquare};
 
-pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
+pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context, delta_seconds: f32) {
 	let mut game_state = &mut loaded_map.game_state;
 
 	// Call update on each obstacle:
 	for obstacle in &mut game_state.obstacles {
-		obstacle.update(1. / 60.);
+		obstacle.update(delta_seconds);
 	}
 
 	let mut player_pos_delta = Vector2::new(0.0, 0.0);
@@ -30,7 +30,7 @@ pub fn update_game(loaded_map: &mut LoadedMap, ctx: &mut Context) {
 	}
 
 	if player_pos_delta.magnitude() > 0.0 {
-		player_pos_delta = player_pos_delta.normalize() * game_state.player.speed;
+		player_pos_delta = player_pos_delta.normalize() * game_state.player.speed * delta_seconds;
 	}
 
 	let new_player_rect = get_player_rect(&game_state.player, player_pos_delta);
