@@ -48,8 +48,8 @@ impl SpinnyCircle {
 			parent_radius:   radius,
 			child_speed:     speed,
 		};
-
-		ObstacleEnum::from(spinny)
+		let e = ObstacleEnum::from(spinny);
+		return e;
 	}
 }
 

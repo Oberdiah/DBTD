@@ -50,7 +50,11 @@ fn main() {
 		.build()
 		.expect("aieee, could not create ggez context!");
 
-	let my_game = MyGame::new(&mut ctx);
+	// Read command line args
+	let args: Vec<String> = std::env::args().collect();
+	let name = args.get(1).unwrap_or(&"Player".to_string()).to_string();
+
+	let my_game = MyGame::new(&mut ctx, name);
 	event::run(ctx, event_loop, my_game);
 }
 
@@ -151,11 +155,13 @@ struct MyGame {
 	egui_backend: EguiBackend,
 	db: Db,
 	all_finished_maps_cache: Vec<String>,
+	is_editing: bool,
 	sprite_batch: SpriteBatch,
+	my_name: String,
 }
 
 impl MyGame {
-	pub fn new(ctx: &mut Context) -> MyGame {
+	pub fn new(ctx: &mut Context, name: String) -> MyGame {
 		let sprite_batch = SpriteBatch::new(graphics::Image::solid(ctx, 1, Color::WHITE).unwrap());
 
 		let mut me = MyGame {
@@ -163,7 +169,9 @@ impl MyGame {
 			egui_backend: EguiBackend::new(ctx),
 			db: Db::init(),
 			all_finished_maps_cache: vec![],
+			is_editing: false,
 			sprite_batch,
+			my_name: name,
 		};
 
 		me.refresh_from_db();
@@ -179,7 +187,7 @@ impl MyGame {
 impl EventHandler for MyGame {
 	fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
 		let egui_ctx = self.egui_backend.ctx();
-		egui::Window::new("Maps").show(&egui_ctx, |ui| {
+		Window::new("Maps").show(&egui_ctx, |ui| {
 			ui.label(format!("Welcome, {}!", get_my_name()));
 			ui.spacing();
 			ui.label("All Maps:");
@@ -221,7 +229,7 @@ impl EventHandler for MyGame {
 	fn draw(&mut self, uncool_ctx: &mut Context) -> GameResult<()> {
 		graphics::set_screen_coordinates(
 			uncool_ctx,
-			graphics::Rect::new(
+			Rect::new(
 				0.0,
 				0.0,
 				graphics::drawable_size(uncool_ctx).0,
