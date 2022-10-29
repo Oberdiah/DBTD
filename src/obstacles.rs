@@ -3,11 +3,12 @@ use enum_dispatch::enum_dispatch;
 use ggez::graphics::{Color, Rect};
 use ggez::Context;
 
+use crate::cool_context::CoolContext;
 use crate::{Deserialize, Player, Serialize};
 
 #[enum_dispatch(ObstacleEnum)]
 pub trait Obstacle {
-	fn render(&self, ctx: &mut Context);
+	fn render(&self, ctx: &mut CoolContext);
 	fn update(&mut self, delta_time: f32);
 	fn does_player_die(&self, player: &Player) -> bool;
 }
@@ -53,7 +54,7 @@ impl SpinnyCircle {
 }
 
 impl Obstacle for SpinnyCircle {
-	fn render(&self, ctx: &mut Context) {
+	fn render(&self, ctx: &mut CoolContext) {
 		for child_index in 0..self.child_count {
 			let angle =
 				child_index as f32 * self.child_spacing + self.current_time * 2.0 * std::f32::consts::PI;
@@ -104,7 +105,7 @@ impl Obstacle for SpinnyCircle {
 pub struct MovingLine {}
 
 impl Obstacle for MovingLine {
-	fn render(&self, ctx: &mut Context) {
+	fn render(&self, ctx: &mut CoolContext) {
 		todo!()
 	}
 

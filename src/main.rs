@@ -8,6 +8,7 @@
 #![feature(generators)]
 
 pub mod common;
+pub mod cool_context;
 pub mod databases;
 pub mod game_update;
 pub mod login_manager;
@@ -19,7 +20,8 @@ use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 use egui::*;
 use ggez::conf::WindowMode;
 use ggez::event::{self, quit, EventHandler, MouseButton};
-use ggez::graphics::{self, draw, Canvas, Color, Drawable, Rect};
+use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics::{self, draw, Canvas, Color, DrawParam, Drawable, Rect};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::position;
 use ggez::{Context, ContextBuilder, GameError, GameResult};
@@ -28,6 +30,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::common::Point2Addons;
+use crate::cool_context::CoolContext;
 use crate::databases::*;
 use crate::game_update::update_game;
 use crate::login_manager::get_my_name;
@@ -148,15 +151,19 @@ struct MyGame {
 	egui_backend: EguiBackend,
 	db: Db,
 	all_finished_maps_cache: Vec<String>,
+	sprite_batch: SpriteBatch,
 }
 
 impl MyGame {
 	pub fn new(ctx: &mut Context) -> MyGame {
+		let sprite_batch = SpriteBatch::new(graphics::Image::solid(ctx, 1, Color::WHITE).unwrap());
+
 		let mut me = MyGame {
 			loaded_map: Some(LoadedMap::new_empty_map(get_my_name(), "TestMapName".into())),
 			egui_backend: EguiBackend::new(ctx),
 			db: Db::init(),
 			all_finished_maps_cache: vec![],
+			sprite_batch,
 		};
 
 		me.refresh_from_db();
@@ -211,35 +218,48 @@ impl EventHandler for MyGame {
 		Ok(())
 	}
 
-	fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+	fn draw(&mut self, uncool_ctx: &mut Context) -> GameResult<()> {
 		graphics::set_screen_coordinates(
-			ctx,
-			graphics::Rect::new(0.0, 0.0, graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1),
+			uncool_ctx,
+			graphics::Rect::new(
+				0.0,
+				0.0,
+				graphics::drawable_size(uncool_ctx).0,
+				graphics::drawable_size(uncool_ctx).1,
+			),
 		)
 		.unwrap();
-		graphics::clear(ctx, Color::new(0.2, 0.2, 0.1, 1.0));
+		graphics::clear(uncool_ctx, Color::new(0.2, 0.2, 0.1, 1.0));
 
 		unsafe {
-			WINDOW_SIZE = Point2::new(graphics::drawable_size(ctx).0, graphics::drawable_size(ctx).1);
+			WINDOW_SIZE =
+				Point2::new(graphics::drawable_size(uncool_ctx).0, graphics::drawable_size(uncool_ctx).1);
 		}
+
+		let mut ctx = CoolContext {
+			ctx:          uncool_ctx,
+			sprite_batch: &mut self.sprite_batch,
+		};
 
 		if let Some(loaded_map) = &mut self.loaded_map {
 			let mut game_state = &mut loaded_map.game_state;
 			let player_position = game_state.player.position;
 
 			for (point, square) in game_state.world_grid.iter_mut() {
-				draw_rect_raw(ctx, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
+				draw_rect_raw(&mut ctx, square.get_color(), point.to_f32(), Point2::new(1.0, 1.0));
 			}
-			draw_rect_raw(ctx, Color::RED, player_position, Point2::new(0.5, 0.5));
+			draw_rect_raw(&mut ctx, Color::RED, player_position, Point2::new(0.5, 0.5));
 
 			for obstacle in &mut game_state.obstacles {
-				obstacle.render(ctx);
+				obstacle.render(&mut ctx);
 			}
 		}
 
-		draw(ctx, &self.egui_backend, ([0.0, 0.0],))?;
+		draw(uncool_ctx, &self.sprite_batch, DrawParam::default())?;
+		self.sprite_batch.clear();
+		draw(uncool_ctx, &self.egui_backend, ([0.0, 0.0],))?;
 
-		graphics::present(ctx)
+		graphics::present(uncool_ctx)
 	}
 
 	fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
@@ -286,7 +306,7 @@ pub fn world_space_to_screen_space(world_space: Point2<f32>) -> Point2<f32> {
 	world_space * size_of_one_square() + screen_offset()
 }
 
-fn draw_rect(ctx: &mut Context, color: Color, world_space_rect: Rect) {
+fn draw_rect(ctx: &mut CoolContext, color: Color, world_space_rect: Rect) {
 	draw_rect_raw(
 		ctx,
 		color,
@@ -295,11 +315,20 @@ fn draw_rect(ctx: &mut Context, color: Color, world_space_rect: Rect) {
 	);
 }
 
-pub fn draw_rect_raw(ctx: &mut Context, color: Color, world_space_pos: Point2<f32>, world_size: Point2<f32>) {
+pub fn draw_rect_raw(
+	ctx: &mut CoolContext,
+	color: Color,
+	world_space_pos: Point2<f32>,
+	world_size: Point2<f32>,
+) {
 	let position = world_space_to_screen_space(world_space_pos);
 	let size = world_size * size_of_one_square();
-	let rect = graphics::Rect::new(position.x, position.y, size.x, size.y);
+	let rect = Rect::new(position.x, position.y, size.x, size.y);
 
-	let rectangle1 = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, color).unwrap();
-	graphics::draw(ctx, &rectangle1, ([0.0, 0.0],)).unwrap();
+	ctx.sprite_batch.add(
+		DrawParam::new()
+			.dest([position.x, position.y])
+			.color(color)
+			.scale([size.x, size.y]),
+	);
 }
